@@ -14,13 +14,13 @@ public class PIDController {
 		double result = err;
 		if (p.Tn > 0.0) { // Verhindere Division durch 0 ...
 			result += integral / p.Tn;
-			System.out.println("Int: " + integral / p.Tn);
 		}
 		double d = (err - oldErr) / t;
 		result += p.Tv * d;
 
 		oldErr = err;
 
+		System.out.println("Int: " + integral / p.Tn + " | Res: " + result * p.Kp);
 		return result * p.Kp;
 	}
 }

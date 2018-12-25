@@ -1,4 +1,4 @@
-package de.kohl.philipp;
+package de.kohl.philipp.sensor;
 
 import lejos.hardware.port.Port;
 import lejos.hardware.sensor.EV3IRSensor;

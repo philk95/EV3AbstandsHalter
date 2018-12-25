@@ -1,9 +1,14 @@
 package de.kohl.philipp;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
 
 import de.kohl.philipp.reglungstechnik.pid.PIDController;
 import de.kohl.philipp.reglungstechnik.pid.PIDParameter;
+import de.kohl.philipp.sensor.IRSensorExtended;
+import de.kohl.philipp.sensor.IRSensorListener;
 import lejos.hardware.Button;
 import lejos.hardware.Sound;
 import lejos.hardware.motor.UnregulatedMotor;
@@ -14,29 +19,50 @@ public class AbstandshalterUnreg implements IRSensorListener {
 
 	UnregulatedMotor left = new UnregulatedMotor(MotorPort.D);
 	UnregulatedMotor right = new UnregulatedMotor(MotorPort.A);
-	private PIDParameter parameter = new PIDParameter(6.0, 0.0, 0.0);
+	private PIDParameter parameter = new PIDParameter(6.0, 0.0, 10.0);
 	private PIDController controller = new PIDController();
 	private IRSensorExtended irSensor = new IRSensorExtended(SensorPort.S1);
 
-	private boolean moveForward = true;
 	private double tOld = System.currentTimeMillis();
 
 	public static void main(String[] args) throws IOException {
 		AbstandshalterUnreg test = new AbstandshalterUnreg();
-		test.init();
-		test.run();
+		test.costum();
+		// test.run();
 	}
 
-	private void init() {
-//		pilot.setLinearSpeed(pilot.getMaxLinearSpeed() * 0.5);
-//		pilot.setAngularSpeed(pilot.getMaxAngularSpeed() * 0.5);
-//		pilot.setLinearAcceleration(500);
-//		pilot.setAngularAcceleration(1500);
+	private void costum() {
+		try {
+			ServerSocket cmdSock = new ServerSocket(1234);
+			System.out.println("Waiting for Connection!");
+			Socket s = cmdSock.accept();
+			System.out.println("Connected!");
+
+			InputStream inputStream = s.getInputStream();
+			int length = inputStream.available();
+
+			byte[] read = new byte[length];
+			inputStream.read(read);
+
+			String test = new String(read);
+			System.out.println(test);
+			try {
+				Thread.sleep(3000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			s.close();
+			cmdSock.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
 	}
 
 	private void run() {
 		Sound.twoBeeps();
-		// pilot.forward();
 
 		Thread escapeListener = new Thread(new Runnable() {
 
@@ -47,13 +73,13 @@ public class AbstandshalterUnreg implements IRSensorListener {
 						break;
 					}
 				}
-				// pilot.stop();
 
 				irSensor.close();
 				System.exit(0);
 			}
 
 		});
+
 		escapeListener.setDaemon(true);
 		escapeListener.start();
 
@@ -80,19 +106,11 @@ public class AbstandshalterUnreg implements IRSensorListener {
 		System.out.println("Speed: " + absSpeed);
 
 		setSpeed(absSpeed);
-//		pilot.setLinearAcceleration(absSpeed);
-//		pilot.setLinearSpeed(absSpeed);
 
 		if (newSpeed <= 0) {
-			if (moveForward) {
-				backward();
-				moveForward = false;
-			}
+			backward();
 		} else {
-			if (!moveForward) {
-				forward();
-				moveForward = true;
-			}
+			forward();
 		}
 
 		tOld = tNew;
@@ -101,19 +119,16 @@ public class AbstandshalterUnreg implements IRSensorListener {
 	private void setSpeed(double absSpeed) {
 		left.setPower((int) absSpeed);
 		right.setPower((int) absSpeed);
-
 	}
 
 	private void forward() {
 		left.forward();
 		right.forward();
-
 	}
 
 	private void backward() {
 		left.backward();
 		right.backward();
-
 	}
 
 }
