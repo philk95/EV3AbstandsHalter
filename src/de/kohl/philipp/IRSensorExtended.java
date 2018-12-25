@@ -25,10 +25,15 @@ public class IRSensorExtended extends EV3IRSensor implements Runnable {
 
 		while (true) {
 			sampleProvider.fetchSample(sample, 0);
-			newValue = (int) sample[0];
+			newValue = sample[0];
+
+			if (newValue == Float.MAX_VALUE || Float.isInfinite(newValue)) {
+				newValue = 50;
+			}
 
 			if (newValue != oldValue) {
 				notifyListener(oldValue, newValue);
+				oldValue = newValue;
 			}
 		}
 

@@ -6,9 +6,7 @@ public class Integrator {
 
 	public double integrate(double signal, double t, boolean reset) {
 		if (!reset) {
-		
 			double offset = ((signal + last_signal) * t) / 2;
-			
 			integral += offset;
 			last_signal = signal;
 			return integral;
