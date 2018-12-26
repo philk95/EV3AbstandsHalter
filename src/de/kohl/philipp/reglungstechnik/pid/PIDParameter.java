@@ -10,4 +10,10 @@ public class PIDParameter {
 	public double Kp;
 	public double Tv;
 	public double Tn;
+
+	@Override
+	public String toString() {
+		return "PIDParameter [Kp=" + Kp + ", Tv=" + Tv + ", Tn=" + Tn + "]";
+	}
+
 }
