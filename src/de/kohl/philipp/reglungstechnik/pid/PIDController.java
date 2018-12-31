@@ -20,7 +20,7 @@ public class PIDController {
 
 		oldErr = err;
 
-		System.out.println("Int: " + integral / p.Tn + " | Res: " + result * p.Kp);
+		// System.out.println("Int: " + integral / p.Tn + " | Res: " + result * p.Kp);
 		return result * p.Kp;
 	}
 }

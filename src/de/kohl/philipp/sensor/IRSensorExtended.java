@@ -8,13 +8,15 @@ public class IRSensorExtended extends EV3IRSensor implements Runnable {
 
 	private IRSensorListener listener;
 	private SampleProvider sampleProvider;
+	private Thread t;
+	private boolean running = true;
 
 	public IRSensorExtended(Port port) {
 		super(port);
 		this.sampleProvider = getDistanceMode();
-		Thread t = new Thread(this);
-		t.setDaemon(true);
-		t.start();
+		this.t = new Thread(this);
+		this.t.setDaemon(true);
+		this.t.start();
 	}
 
 	@Override
@@ -23,7 +25,7 @@ public class IRSensorExtended extends EV3IRSensor implements Runnable {
 		float oldValue = -1;
 		float newValue = -2;
 
-		while (true) {
+		while (running) {
 			sampleProvider.fetchSample(sample, 0);
 			newValue = sample[0];
 
@@ -41,17 +43,17 @@ public class IRSensorExtended extends EV3IRSensor implements Runnable {
 
 	private void notifyListener(float oldValue, float newValue) {
 		if (listener != null) {
-			listener.notify(oldValue, newValue);
+			listener.valueChanged(oldValue, newValue);
 		}
 
-	}
-
-	public IRSensorListener getListener() {
-		return listener;
 	}
 
 	public void setListener(IRSensorListener listener) {
 		this.listener = listener;
 	}
 
+	public void shutdown() {
+		running = false;
+		close();
+	}
 }

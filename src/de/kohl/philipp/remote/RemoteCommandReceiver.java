@@ -8,16 +8,18 @@ import java.net.Socket;
 public class RemoteCommandReceiver extends Thread {
 
 	private RemoteCommandReceiverListener listener;
+	private int port;
 
-	public RemoteCommandReceiver(RemoteCommandReceiverListener listener) {
+	public RemoteCommandReceiver(int port, RemoteCommandReceiverListener listener) {
 		this.listener = listener;
+		this.port = port;
 		setDaemon(true);
 	}
 
 	@Override
 	public void run() {
 		try {
-			ServerSocket cmdSock = new ServerSocket(1234);
+			ServerSocket cmdSock = new ServerSocket(this.port);
 			System.out.println("Waiting for Connection!");
 			Socket s = cmdSock.accept();
 			System.out.println("Connected!");
@@ -27,12 +29,15 @@ public class RemoteCommandReceiver extends Thread {
 			while (!s.isClosed()) {
 				int length = inputStream.available();
 
-				byte[] read = new byte[length];
-				inputStream.read(read);
+				if (length > 0) {
+					byte[] read = new byte[length];
+					inputStream.read(read);
 
-				String command = new String(read);
-				listener.receivedCommand(command);
+					String command = new String(read);
+					listener.receivedCommand(command);
+				}
 			}
+			inputStream.close();
 			s.close();
 			cmdSock.close();
 		} catch (IOException e) {

@@ -2,11 +2,11 @@ package de.kohl.philipp;
 
 import java.io.IOException;
 
-import de.kohl.philipp.escape.EscapeListener;
 import de.kohl.philipp.reglungstechnik.pid.PIDController;
 import de.kohl.philipp.reglungstechnik.pid.PIDParameter;
 import de.kohl.philipp.remote.RemoteCommandReceiver;
 import de.kohl.philipp.remote.RemoteCommandReceiverListener;
+import de.kohl.philipp.remote.RemoteRegulatorValueTransfer;
 import de.kohl.philipp.sensor.IRSensorExtended;
 import de.kohl.philipp.sensor.IRSensorListener;
 import lejos.hardware.Sound;
@@ -14,7 +14,7 @@ import lejos.hardware.motor.UnregulatedMotor;
 import lejos.hardware.port.MotorPort;
 import lejos.hardware.port.SensorPort;
 
-public class Abstandshalter implements IRSensorListener, RemoteCommandReceiverListener {
+public class Abstandshalter extends StandardConfiguration implements IRSensorListener, RemoteCommandReceiverListener {
 
 	private Object lock = new Object();
 
@@ -24,32 +24,46 @@ public class Abstandshalter implements IRSensorListener, RemoteCommandReceiverLi
 	private PIDController controller = new PIDController();
 	private IRSensorExtended irSensor = new IRSensorExtended(SensorPort.S1);
 
+	private RemoteRegulatorValueTransfer remoteValueTf;
+
 	private boolean resetRegler = false;
 	private double tOld = System.currentTimeMillis();
 
-	public static void main(String[] args) throws IOException {
-		Abstandshalter test = new Abstandshalter();
-		test.run();
-	}
-
-	private void run() {
-		EscapeListener exitOnEscape = new EscapeListener();
-		exitOnEscape.start();
-
-		RemoteCommandReceiver commandReceiver = new RemoteCommandReceiver(this);
+	@Override
+	protected void init() {
+		RemoteCommandReceiver commandReceiver = new RemoteCommandReceiver(1234, this);
 		commandReceiver.start();
 
-		Sound.twoBeeps();
+		remoteValueTf = new RemoteRegulatorValueTransfer(1235);
+		remoteValueTf.start();
 
 		irSensor.setListener(this);
 
-		while (true) {
-
-		}
+		Sound.twoBeeps();
 	}
 
 	@Override
-	public void notify(float oldValue, float newValue) {
+	protected void run() {
+
+	}
+
+	@Override
+	protected void shutdown() {
+		System.out.println("Shutting down!");
+		remoteValueTf.close();
+		irSensor.shutdown();
+		System.out.println("Shutting down complete! Bye bye!");
+	}
+
+	@Override
+	public void valueChanged(float oldValue, float newValue) {
+		if (remoteValueTf.isConnected()) {
+			try {
+				remoteValueTf.send("" + newValue);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 		double tNew = System.currentTimeMillis();
 		double delta = tNew - tOld;
 		double newSpeed = 0;
@@ -64,7 +78,7 @@ public class Abstandshalter implements IRSensorListener, RemoteCommandReceiverLi
 			absSpeed = 100;
 		}
 
-		System.out.println("Speed: " + absSpeed);
+//		System.out.println("Speed: " + absSpeed);
 
 		setSpeed(absSpeed);
 
@@ -106,11 +120,10 @@ public class Abstandshalter implements IRSensorListener, RemoteCommandReceiverLi
 					System.out.println("Received new parameter: " + parameter);
 				}
 			} catch (NumberFormatException e) {
-				//System.out.println("RemoteCommandError: " + e.getMessage());
+				// System.out.println("RemoteCommandError: " + e.getMessage());
 			}
 		} else {
-			//System.out.println("RemoteCommandError: Invalid length " + splitted.length);
+			// System.out.println("RemoteCommandError: Invalid length " + splitted.length);
 		}
 	}
-
 }
