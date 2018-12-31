@@ -1,4 +1,4 @@
-package de.kohl.philipp.remote;
+package de.kohl.philipp.remote.receiver;
 
 import java.io.IOException;
 import java.io.InputStream;

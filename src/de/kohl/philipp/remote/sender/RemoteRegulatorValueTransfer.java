@@ -1,14 +1,13 @@
-package de.kohl.philipp.remote;
+package de.kohl.philipp.remote.sender;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 
 public class RemoteRegulatorValueTransfer extends Thread {
 
 	private int port;
-	private OutputStream outputStream;
 	private ServerSocket cmdSock;
 	private Socket s;
 
@@ -21,9 +20,21 @@ public class RemoteRegulatorValueTransfer extends Thread {
 	public void run() {
 		try {
 			cmdSock = new ServerSocket(this.port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		while (true) {
+			if (!isConnected()) {
+				waitForConnection();
+			}
+		}
+	}
+
+	private void waitForConnection() {
+		try {
 			s = cmdSock.accept();
 			System.out.println("RemoteRegulatorValueTransfer connected!");
-			outputStream = s.getOutputStream();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -33,19 +44,26 @@ public class RemoteRegulatorValueTransfer extends Thread {
 		return s != null && s.isConnected() && !s.isClosed();
 	}
 
-	public void send(String command) throws IOException {
+	public void send(String key, String value) throws IOException {
 		if (!isConnected()) {
 			throw new NullPointerException("No device connected! Connect first and then send data!");
 		}
 
-		s.getOutputStream().write(command.getBytes());
-		s.getOutputStream().flush();
+		String message = String.format("[%s:%s]", key, value);
+		try {
+			s.getOutputStream().write(message.getBytes());
+			s.getOutputStream().flush();
+		} catch (SocketException e) {
+			System.out.println("Seems like client has disconnected. Release ressources!");
+			s.close();
+		}
 	}
 
 	public void close() {
 		try {
-			outputStream.close();
-			s.close();
+			if (isConnected()) {
+				s.close();
+			}
 			cmdSock.close();
 		} catch (IOException e) {
 			e.printStackTrace();

@@ -4,9 +4,9 @@ import java.io.IOException;
 
 import de.kohl.philipp.reglungstechnik.pid.PIDController;
 import de.kohl.philipp.reglungstechnik.pid.PIDParameter;
-import de.kohl.philipp.remote.RemoteCommandReceiver;
-import de.kohl.philipp.remote.RemoteCommandReceiverListener;
-import de.kohl.philipp.remote.RemoteRegulatorValueTransfer;
+import de.kohl.philipp.remote.receiver.RemoteCommandReceiver;
+import de.kohl.philipp.remote.receiver.RemoteCommandReceiverListener;
+import de.kohl.philipp.remote.sender.RemoteRegulatorValueTransfer;
 import de.kohl.philipp.sensor.IRSensorExtended;
 import de.kohl.philipp.sensor.IRSensorListener;
 import lejos.hardware.Sound;
@@ -28,6 +28,8 @@ public class Abstandshalter extends StandardConfiguration implements IRSensorLis
 
 	private boolean resetRegler = false;
 	private double tOld = System.currentTimeMillis();
+
+	private double setpoint = 20;
 
 	@Override
 	protected void init() {
@@ -57,18 +59,20 @@ public class Abstandshalter extends StandardConfiguration implements IRSensorLis
 
 	@Override
 	public void valueChanged(float oldValue, float newValue) {
-		if (remoteValueTf.isConnected()) {
-			try {
-				remoteValueTf.send("" + newValue);
-			} catch (IOException e) {
-				e.printStackTrace();
+		try {
+			if (remoteValueTf.isConnected()) {
+				remoteValueTf.send("Sollwert", String.valueOf(setpoint));
+				remoteValueTf.send("Abstand", String.valueOf(newValue));
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
+
 		double tNew = System.currentTimeMillis();
 		double delta = tNew - tOld;
 		double newSpeed = 0;
 		synchronized (lock) {
-			newSpeed = -1 * controller.calculate(parameter, 20, newValue, delta, resetRegler);
+			newSpeed = -1 * controller.calculate(parameter, setpoint, newValue, delta, resetRegler);
 			resetRegler = false;
 		}
 
